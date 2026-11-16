@@ -1,0 +1,54 @@
+{
+  "name": "apkstart",
+  "productName": "ApkStart",
+  "version": "0.4.4",
+  "description": "Lightweight Android app runner for Windows: double-click an APK to install it, then run each app in its own window from a desktop icon",
+  "main": "src/main.js",
+  "updateRepo": "",
+  "author": "RoutineMiku",
+  "license": "MIT",
+  "private": true,
+  "homepage": "https://github.com/RoutineMiku/apkstart#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RoutineMiku/apkstart.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RoutineMiku/apkstart/issues"
+  },
+  "keywords": [
+    "android",
+    "emulator",
+    "apk",
+    "windows",
+    "qemu",
+    "electron",
+    "wsa",
+    "freeform"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "os": [
+    "win32"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "node test/run-tests.js && node test/engine-test.js && node test/auto-test.js",
+    "pack": "node build/pack.js",
+    "runtime": "node build/prepare-runtime.js",
+    "build:exe": "node build/prepare-runtime.js && electron-builder --win nsis",
+    "selftest": "node scripts/selftest.js",
+    "assoc:on": "node scripts/assoc.js on",
+    "assoc:off": "node scripts/assoc.js off",
+    "test:boot": "node test/boot-test.js"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "@napi-rs/lzma": "^1.5.3"
+  }
+}

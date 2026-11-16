@@ -1,0 +1,71 @@
+appId: com.apkstart.win
+productName: ApkStart
+copyright: Copyright © 2026 ApkStart
+
+directories:
+  output: dist/release
+  buildResources: build
+
+# Ship only what runs; the source folder goes in as-is (no asar: the window agent needs real .ps1 paths)
+asar: false
+files:
+  - src/**/*
+  - package.json
+  - LICENSE
+  - "!**/*.map"
+  - "!**/node_modules/**"
+  # Used at runtime to unpack .xz images (prebuilt NAPI, no ABI issues)
+  - "node_modules/@napi-rs/lzma/**"
+  - "node_modules/@napi-rs/lzma-win32-x64-msvc/**"
+  - "!node_modules/@napi-rs/lzma/*.md"
+  - "!node_modules/@napi-rs/lzma/*.ts"
+  - "!node_modules/@napi-rs/lzma/browser-entry.*"
+
+# Keep only the UI languages (English and Arabic); Electron locales shrink from 41MB to ~2MB
+electronLanguages:
+  - en-US
+  - ar
+
+# Full runtime (emulator + platform-tools + system image), produced by build/prepare-runtime.js.
+# Bundled in the installer, so first launch needs no downloads.
+extraResources:
+  - from: build/runtime
+    to: runtime
+    filter:
+      - "**/*"
+      - "!.prepared"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: src/ui/assets/appicon.ico
+  # Installs per user: no writes to system folders, no admin rights needed
+  requestedExecutionLevel: asInvoker
+
+nsis:
+  # Standard wizard (not one-click) so the user can choose the install location
+  # (installing off the system drive saves C: space; the runtime data folder is set separately in Settings).
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  displayLanguageSelector: false
+  # always: recreate the desktop .lnk even if one with the same name exists.
+  # The default (true) only creates it when missing, so on some machines (security software
+  # blocking it, desktop redirected to OneDrive, a stale shortcut left pointing at a deleted folder)
+  # users end up with no icon, or one pointing at the old exe.
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  artifactName: ApkStart-${version}-Setup.exe
+  # Before uninstalling, kill runtime processes that are still running so locked files
+  # don't block removal (usually a lingering qemu/adb process).
+  include: build/installer.nsh
+  # The installer already contains the full runtime (emulator + .gz system image); on first
+  # launch the image is unpacked into the user folder, and nothing is downloaded afterwards.
+
+# Compression: normal (zlib). The images are already xz/gz, so NSIS only compresses Electron's
+# DLLs here; maximum (LZMA) is barely smaller but makes the installer build 10+ minutes slower.
+# Note: when CI runs npx from PowerShell, an inline -c.compression=xxx gets split and treated as
+# a config file path, so the compression level is set here, not overridden in the workflow.
+compression: normal

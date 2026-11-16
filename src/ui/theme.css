@@ -1,0 +1,286 @@
+/* ============================================================================
+ * theme.css: visual layer on top of style.css (overrides only)
+ *
+ * Direction: practical, quiet, quick. Neutral graphite surfaces, so the installed apps'
+ * own icons carry the color. One accent, Android green, for the primary action, the
+ * running state and selection. Signature: the runtime status dot, which pulses only
+ * while Android is actually booting or installing (.dot.live).
+ * Spacing on a 4px grid; one easing curve.
+ *
+ * Visual pass guided by unslop by Damir Sokolovsky (@heydamir), CC BY 4.0.
+ * ========================================================================== */
+
+:root {
+  --brand: #0b7d4f;          /* 5.2:1 against white text */
+  --brand-dark: #096b43;
+  --brand-2: #0b7d4f;
+  --brand-soft: #e7f4ed;
+  --brand-ink: #075c3a;
+
+  --bg: #f7f7f8;
+  --bg-2: #f0f0f1;
+  --panel: #ffffff;
+  --panel-2: #fafafa;
+  --line: rgba(23, 23, 23, .08);
+  --line-strong: rgba(23, 23, 23, .14);
+  --text: #171717;
+  --text-2: #404040;
+  --muted: #6b6b6b;          /* 5:1 on --bg */
+  --faint: #8a8a8f;          /* icons and placeholders only */
+  --danger: #dc2626;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .05);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, .06);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, .12);
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --ring: 0 0 0 3px rgba(11, 125, 79, .22);
+}
+
+html, body { background: var(--bg); }
+
+/* ---------------- Title bar ---------------- */
+
+/* Same surface as the page, a hairline below; 44px matches Electron's caption overlay */
+.titlebar {
+  height: 44px;
+  flex: 0 0 44px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.logo img,
+.logo svg { width: 20px; height: 20px; display: block; }
+
+.brand-name { font-size: 14px; font-weight: 600; letter-spacing: 0; color: var(--text); }
+
+.brand-tag {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 500;
+  transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+.brand-tag:hover { background: var(--bg-2); color: var(--text); }
+.brand-tag.ok { color: var(--brand-ink); background: var(--brand-soft); border-color: rgba(11, 125, 79, .18); }
+
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  transition: background-color .15s var(--ease), color .15s var(--ease), transform .12s var(--ease);
+}
+.icon-btn:hover { background: rgba(23, 23, 23, .06); color: var(--text); }
+.icon-btn:active { transform: scale(.97); }
+
+.icon-btn:focus-visible,
+.btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* ---------------- Search box / buttons ---------------- */
+
+.search {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  box-shadow: none;
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+.search:focus-within { border-color: var(--brand); box-shadow: var(--ring); }
+
+.btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  box-shadow: none;
+  font-weight: 500;
+  justify-content: center;
+  transition: background-color .15s var(--ease), border-color .15s var(--ease), transform .12s var(--ease);
+}
+.btn:hover { background: var(--bg-2); }
+.btn:active { transform: scale(.98); }
+.btn.sm { height: 28px; padding: 0 12px; border-radius: 6px; }
+.btn.lg { height: 40px; padding: 0 20px; border-radius: 10px; }
+
+.btn.primary {
+  border: 1px solid var(--brand);
+  color: #fff;
+  background: var(--brand);
+  box-shadow: none;
+}
+.btn.primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
+
+.btn.ghost { background: transparent; }
+.btn.ghost:hover { background: rgba(23, 23, 23, .05); }
+
+/* ---------------- App cards ---------------- */
+
+.grid { gap: 16px; }
+
+.card {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+.card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-md); }
+
+/* The app icons are the color on this screen: give them the weight of a real object */
+.card .icon {
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 4px 12px rgba(0, 0, 0, .08);
+}
+
+.card .badge-run { background: var(--brand); box-shadow: 0 0 0 2px var(--panel); }
+
+/* ---------------- Status bar ---------------- */
+
+.statusbar { border-top: 1px solid var(--line); background: var(--bg); }
+
+.dot.ok { box-shadow: 0 0 0 3px var(--brand-soft); }
+
+/* ---------------- Dialogs ---------------- */
+
+.modal-mask { background: rgba(0, 0, 0, .32); backdrop-filter: none; }
+
+.modal {
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.modal-head { background: var(--panel); border-bottom: 1px solid var(--line); }
+
+/* ---------------- Scrollbars ---------------- */
+
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-thumb {
+  background: rgba(23, 23, 23, .16);
+  border: 4px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(23, 23, 23, .28); background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ============================================================================
+ * Startup welcome card: a short status summary, not a banner
+ * ========================================================================== */
+
+.welcome-mask[hidden] { display: none; }
+
+.welcome-mask {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center;
+  background: rgba(0, 0, 0, .32);
+  animation: wl-fade .2s var(--ease) both;
+}
+
+.welcome {
+  position: relative;
+  width: 400px;
+  max-width: calc(100vw - 48px);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  animation: wl-rise .32s var(--ease) both;
+}
+
+@keyframes wl-fade { from { opacity: 0; } }
+@keyframes wl-rise { from { opacity: 0; transform: translateY(8px); } }
+
+.welcome-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 24px 0;
+}
+
+.welcome-badge { flex: 0 0 auto; width: 40px; height: 40px; }
+.welcome-badge img { width: 40px; height: 40px; display: block; }
+
+.welcome-hi { font-size: 18px; font-weight: 600; line-height: 24px; color: var(--text); }
+.welcome-sub { margin-top: 2px; font-size: 13px; line-height: 20px; color: var(--muted); }
+
+.welcome-body { padding: 20px 24px 8px; }
+
+.welcome-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.welcome-stat {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 12px;
+  padding: 12px;
+}
+.welcome-stat b {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.welcome-stat span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+
+.welcome-tips { margin: 16px 0 4px; display: grid; gap: 8px; }
+.welcome-tip {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-2);
+}
+html[lang="ar"] .welcome-tip { line-height: 24px; }
+.welcome-tip i {
+  flex: 0 0 auto;
+  width: 20px; height: 20px;
+  border-radius: 6px;
+  display: grid; place-items: center;
+  background: var(--bg-2);
+  color: var(--text-2);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+html[lang="ar"] .welcome-tip i { margin-top: 2px; }
+
+.welcome-opt {
+  margin-top: 12px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.welcome-opt input { accent-color: var(--brand); width: 16px; height: 16px; margin: 0; }
+
+.welcome-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px 24px;
+}
+.welcome-actions .btn { flex: 1; height: 40px; border-radius: 10px; font-size: 14px; }
+.welcome-actions .btn.ghost { flex: 0 0 auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-mask, .welcome, .dot.live { animation: none; }
+}

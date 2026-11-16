@@ -1,0 +1,166 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and publish the portable edition
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (including the Electron runtime)
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Pack portable edition
+        run: npm run pack
+
+      # 7-Zip instead of Compress-Archive: on the same folder .NET deflate gives 105MB,
+      # 7-Zip -mx=9 gives 99.6MB. build/zip.js also has a size gate: above 100MiB the
+      # job fails, so the package can't quietly grow.
+      - name: Compress output (7-Zip, 100MiB size gate)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag.StartsWith('v')) { $tag = "v$tag" }
+          node build/zip.js dist/ApkStart-win64-portable "ApkStart-$tag-win64-portable.zip" --limit-mb 100
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-Item "ApkStart-$tag-win64-portable.zip" | Select-Object Name, Length
+
+      # Create the release and upload the lightweight portable build (small shell; the runtime is downloaded on first launch)
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag.StartsWith('v')) { $tag = "v$tag" }
+          $zip = "ApkStart-$tag-win64-portable.zip"
+          # Idempotent: if the release already exists (re-run / re-pushed tag), skip create and only upload
+          $existing = gh release view $tag --json tagName -q .tagName 2>$null
+          if (-not $existing) {
+            gh release create $tag --title "ApkStart $tag" --generate-notes
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+          $ok = $false
+          for ($i = 1; $i -le 3 -and -not $ok; $i++) {
+            gh release upload $tag $zip --clobber
+            if ($LASTEXITCODE -eq 0) { $ok = $true } else { Start-Sleep -Seconds 15 }
+          }
+          if (-not $ok) { Write-Error "Upload failed: $zip"; exit 1 }
+          gh release view $tag --json assets --jq '.assets[].name'
+
+  full:
+    name: Build the full edition (bundled runtime, works offline)
+    runs-on: windows-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Assemble the runtime from Google's official sources (emulator + platform-tools + aehd + Play x86_64 image).
+      # Output goes to engine/, the same layout as local development.
+      - name: Assemble runtime
+        run: node build/fetch-runtime.js engine
+
+      # prepare-runtime compresses system.img/vendor.img to xz (LZMA2).
+      # The CI runner has only 2 cores: XZ_PRESET=6 cuts compression from ~2h to ~40min (+3% size).
+      # XZ_TIMEOUT_MS is a watchdog: on timeout it kills xz and falls back to gzip,
+      # so a stuck compressor (e.g. stdin never closed -> 0-byte output) can't hang the job for hours.
+      - name: Prepare runtime (xz, faster preset on CI)
+        run: node build/prepare-runtime.js --force
+        env:
+          XZ_PRESET: '6'
+          XZ_TIMEOUT_MS: '3600000'
+
+      # Bundle the Microsoft VC++ 2015-2022 x64 runtime: the Android Emulator (Qt6) and qemu need it,
+      # and without it they won't start on other PCs (0xc0000135 / missing MSVCP140).
+      # It goes into build/runtime and ships with extraResources, so offline install still works.
+      - name: Download VC++ runtime (bundled for offline use)
+        shell: pwsh
+        run: |
+          $dir = "build\runtime"
+          if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+          $out = "$dir\vc_redist.x64.exe"
+          Write-Output "Downloading VC++ 2015-2022 x64 runtime..."
+          curl.exe -L -o $out "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          if (-not (Test-Path $out) -or (Get-Item $out).Length -lt 1MB) { Write-Error "vc_redist download failed" }
+          Get-Item $out | Select-Object Name, Length
+
+      # Without a git tag electron-builder doesn't publish implicitly; with a tag it would fail with
+      # "GitHub Personal Access Token is not set" because this job has no GH_TOKEN.
+      # So --publish never here; the installer is uploaded with gh release upload in the next step.
+      - name: Build full installer
+        run: npx electron-builder --win nsis --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload full edition to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag.StartsWith('v')) { $tag = "v$tag" }
+          $setup = Get-ChildItem dist/release/*Setup.exe | Select-Object -First 1
+          if (-not $setup) { Write-Error "Setup.exe not found"; exit 1 }
+          Write-Output ("Uploading {0} ({1:N0} MB)" -f $setup.Name, ($setup.Length / 1MB))
+          $ok = $false
+          for ($i = 1; $i -le 3 -and -not $ok; $i++) {
+            gh release upload $tag $setup.FullName --clobber
+            if ($LASTEXITCODE -eq 0) { $ok = $true } else { Start-Sleep -Seconds 20 }
+          }
+          if (-not $ok) { Write-Error "Upload failed: $($setup.Name)"; exit 1 }
+          gh release view $tag --json assets --jq '.assets[] | "\(.name) \(.size)"'
+
+      # The lightweight edition (no bundled runtime) can download this single runtime pack from
+      # the project's GitHub Release instead of fetching emulator / system image one by one.
+      # The images are already .xz, so bsdtar zips them as-is (no recompression, saves tens of minutes).
+      - name: Pack runtime bundle (lightweight edition download source)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag.StartsWith('v')) { $tag = "v$tag" }
+          $zip = "ApkStart-runtime-$tag.zip"
+          if (-not (Test-Path "build\runtime\emulator\emulator.exe")) { Write-Error "build\runtime is incomplete"; exit 1 }
+          tar.exe -a -cf $zip -C "build\runtime" .
+          if ($LASTEXITCODE -ne 0) { Write-Error "Packing the runtime failed"; exit 1 }
+          Get-Item $zip | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
+
+      - name: Upload runtime bundle to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag.StartsWith('v')) { $tag = "v$tag" }
+          $zip = "ApkStart-runtime-$tag.zip"
+          $ok = $false
+          for ($i = 1; $i -le 3 -and -not $ok; $i++) {
+            gh release upload $tag $zip --clobber
+            if ($LASTEXITCODE -eq 0) { $ok = $true } else { Start-Sleep -Seconds 20 }
+          }
+          if (-not $ok) { Write-Error "Upload failed: $zip"; exit 1 }
+          gh release view $tag --json assets --jq '.assets[] | "\(.name) \(.size)"'

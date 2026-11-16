@@ -1,0 +1,8 @@
+Generated with ComfyUI 0.42 (local), Qwen-Image 2.1:
+  UNETLoader qwen_image_2.1_fp8_scaled.safetensors; CLIPLoader qwen3vl_8b_qwen_image_2.1_fp8_scaled.safetensors (type qwen_image);
+  VAELoader qwen_image_2.1_vae.safetensors; EmptyLatentImage 1024x1024; KSampler seed 7, 25 steps, cfg 1.0, euler / simple.
+
+Prompt:
+A premium Windows app icon artwork on a full-bleed square canvas, filled edge to edge, with no frame, no border and no rounded corners. The background is a rich deep emerald green material (#0b7d4f) with soft studio lighting from the top left, a gentle tonal falloff toward the bottom right and a subtle smooth surface. In the center, a thick white rounded play-button triangle pointing right, raised from the surface like a smooth ceramic tile. Realistic soft 3D render with real depth: gentle soft shadow under the raised shape, a fine bevel catching the light, matte ceramic and frosted-glass materials. Calm and high-end, like a modern desktop app icon. No glow, no neon, no sparkles, no lens flare, no text or letters, no extra objects. The subject is centered with generous margin.
+
+build/logo.html fits this image into the rounded tile; build/render-logo.js writes the PNG and ICO files.

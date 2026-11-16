@@ -1,0 +1,18 @@
+{
+  "Android data (apps + snapshots)": "بيانات أندرويد (التطبيقات + اللقطات)",
+  "APK package cache": "ذاكرة التخزين المؤقت لحزم APK",
+  "Desktop icon cache": "ذاكرة التخزين المؤقت لأيقونات سطح المكتب",
+  "Logs": "السجلات",
+  "Runtime (engine + system images)": "بيئة التشغيل (المحرك + صور النظام)",
+  "File is too small to be a valid APK": "الملف صغير جدًا ولا يمكن أن يكون ملف APK صالحًا",
+  "AndroidManifest.xml is missing: this is not a single APK (it may be a split .apks/.xapk package)": "الملف AndroidManifest.xml مفقود: هذا ليس ملف APK مفردًا (قد يكون حزمة مقسّمة ‎.apks/.xapk)",
+  "No package name found in the manifest": "لم يُعثر على اسم الحزمة في ملف البيان",
+  "Not Android binary XML (obfuscated or invalid APK)": "ليس ملف XML ثنائيًا لأندرويد (ملف APK مموّه أو غير صالح)",
+  "The APK manifest is empty": "ملف البيان في APK فارغ",
+  "Shortcut folder is not writable: {dir} ({error})": "تعذّرت الكتابة في مجلد الاختصار: {dir} ({error})",
+  "Could not create the shortcut (writeShortcutLink returned false)": "تعذّر إنشاء الاختصار (أعاد writeShortcutLink القيمة false)",
+  "Shortcut was not saved: {path}": "لم يُحفظ الاختصار: {path}",
+  "New notification": "إشعار جديد",
+  "Android app": "تطبيق أندرويد",
+  "Runtime is not ready": "بيئة التشغيل غير جاهزة"
+}
